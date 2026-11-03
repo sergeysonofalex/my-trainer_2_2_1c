@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Тренажёр: Знакомство с клавиатурой</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Neucha&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#fdfcf4; --grid:#d3e5f2; --pen:#1f3a9e; --red:#d9443a; --green:#2f9e5b;
+    --ink:#22304a; --muted:#5d6b82; --board:#2b4f43; --wood:#b8843f; --ruler:#f2cf5b;
+    --hand:"Neucha","Segoe Print","Comic Sans MS",cursive;
+    --sans:"Nunito","Trebuchet MS",Verdana,sans-serif;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0; padding:18px; font-family:var(--sans); font-size:19px; line-height:1.45; color:var(--ink);
+    background-color:var(--paper);
+    background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+    background-size:28px 28px; background-attachment:fixed;
+    -webkit-user-select:none; -moz-user-select:none; -ms-user-select:none; user-select:none;
+  }
+  body::before{ /* красное поле тетради */
+    content:""; position:fixed; top:0; bottom:0; width:2px; background:#e98a84; pointer-events:none;
+    left:max(4px, calc((100vw - 1040px) / 2 - 16px));
+  }
+  input{ -webkit-user-select:text; -moz-user-select:text; -ms-user-select:text; user-select:text; }
+  .wrap{ max-width:1040px; margin:0 auto; position:relative; }
+  .screen{ display:none; }
+  .screen.active{ display:block; }
+
+  .card{
+    background:#fff; border:2px solid var(--pen); border-radius:6px;
+    box-shadow:7px 7px 0 rgba(31,58,158,.16); padding:26px 30px;
+  }
+
+  /* ===== СТАРТ ===== */
+  .start-card{ max-width:740px; margin:5vh auto 0; text-align:center; }
+  .hero-keys{ display:flex; justify-content:center; flex-wrap:wrap; margin-bottom:6px; }
+  h1{ font-family:var(--hand); font-weight:400; font-size:40px; line-height:1.15; margin:8px 0 8px; color:var(--pen); }
+  .subtitle{ color:var(--muted); font-size:18px; margin:0 0 24px; }
+  .name-label{ display:block; font-family:var(--hand); font-size:24px; color:var(--red); }
+  #nameInput{
+    display:block; width:100%; max-width:430px; margin:6px auto 24px; padding:8px 12px;
+    font-family:var(--hand); font-size:30px; text-align:center; color:var(--pen);
+    border:3px solid #28a745; border-radius:12px; background:#f1fff5; outline:none;
+    box-shadow:0 0 10px rgba(40,167,69,.45); transition:box-shadow .2s ease;
+  }
+  #nameInput:focus{ box-shadow:0 0 18px rgba(40,167,69,.75); }
+
+  .btn{
+    font-family:var(--hand); font-size:26px; padding:10px 34px; border-radius:8px; cursor:pointer;
+    border:2px solid var(--pen); transition:transform .1s ease, box-shadow .1s ease;
+  }
+  .btn-primary{ color:#fff; background:var(--pen); box-shadow:0 5px 0 #11236b; }
+  .btn-primary:hover:not(:disabled){ transform:translateY(-2px); box-shadow:0 7px 0 #11236b; }
+  .btn-primary:active:not(:disabled){ transform:translateY(4px); box-shadow:0 1px 0 #11236b; }
+  .btn-primary:disabled{ background:#c9d1e6; border-color:#b3bdd8; box-shadow:0 5px 0 #aab4d0; cursor:not-allowed; }
+
+  /* ===== ШАПКА: ШКОЛЬНАЯ ДОСКА + ЛИНЕЙКА ===== */
+  .topbar{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .badge{
+    background:var(--board); color:#f4f7f2; border:4px solid var(--wood); border-radius:6px;
+    padding:4px 16px; font-family:var(--hand); font-size:21px; box-shadow:0 3px 0 rgba(0,0,0,.18);
+  }
+  .progress-track{
+    position:relative; height:28px; margin-bottom:18px; border-radius:4px; overflow:hidden;
+    border:2px solid #8a6a12; background:var(--ruler);
+    background-image:
+      repeating-linear-gradient(90deg,#6b520e 0 1.5px,transparent 1.5px 50px),
+      repeating-linear-gradient(90deg,#6b520e 0 1px,transparent 1px 10px);
+    background-size:100% 14px,100% 8px; background-repeat:no-repeat; background-position:0 100%,0 100%;
+  }
+  .progress-fill{ height:100%; width:0; background:rgba(31,58,158,.28); border-right:3px solid var(--pen); transition:width .35s ease; }
+
+  /* ===== ВОПРОС ===== */
+  .qnum{ display:inline-block; font-family:var(--hand); font-size:22px; color:var(--red); border-bottom:3px double var(--red); margin-bottom:12px; }
+  .qtext{ font-family:var(--hand); font-size:30px; line-height:1.3; color:var(--pen); margin-bottom:22px; }
+  .qtext .keycap{ vertical-align:middle; margin:0 8px 6px; }
+
+  /* ===== НАСТОЯЩИЕ КЛАВИШИ ===== */
+  .keycap{ display:inline-flex; flex-direction:column; align-items:center; gap:14px; margin:6px 7px 8px; }
+  .cap{
+    --w:150px; --h:126px; position:relative; width:var(--w); height:var(--h); border-radius:16px;
+    background:linear-gradient(#c6cdd5,#a3acb6);
+    box-shadow:0 9px 0 #727c88, 0 14px 16px rgba(20,30,50,.25);
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .cap.w{ --w:210px; }
+  .cap.sp{ --w:340px; }
+  .cap::before{
+    content:""; position:absolute; inset:6px 8px 12px; border-radius:11px;
+    background:linear-gradient(#fff,#e8ecf1); box-shadow:inset 0 2px 0 #fff, inset 0 -3px 0 rgba(0,0,0,.07);
+  }
+  .lg{ position:absolute; inset:6px 8px 12px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; color:#26324a; }
+  .lg svg{ width:56px; height:56px; fill:none; stroke:currentColor; stroke-width:3.4; stroke-linecap:round; stroke-linejoin:round; }
+  .lg .nm{ font-weight:800; font-size:18px; line-height:1; }
+  .lg .ch{ font-weight:800; font-size:58px; line-height:1; }
+  .keycap .ru{ font-size:15px; font-weight:700; color:var(--muted); line-height:1; }
+
+  .keycap.sm{ gap:12px; margin:4px 5px 6px; }
+  .keycap.sm .cap{ --w:96px; --h:82px; border-radius:13px; box-shadow:0 7px 0 #727c88, 0 10px 12px rgba(20,30,50,.22); }
+  .keycap.sm .cap.w{ --w:136px; }
+  .keycap.sm .cap.sp{ --w:210px; }
+  .keycap.sm .cap::before, .keycap.sm .lg{ inset:5px 6px 9px; }
+  .keycap.sm .lg svg{ width:34px; height:34px; }
+  .keycap.sm .lg .nm{ font-size:12px; }
+  .keycap.sm .lg .ch{ font-size:38px; }
+  .keycap.sm .ru{ font-size:12px; }
+
+  .plus{ align-self:center; font-family:var(--hand); font-size:44px; color:var(--pen); margin:0 4px 26px; }
+
+  /* ===== ВАРИАНТЫ ===== */
+  .options-wrap{ display:flex; flex-wrap:wrap; gap:14px 22px; justify-content:center; margin-top:6px; }
+  .options-wrap.text-mode{ flex-direction:column; gap:10px; justify-content:stretch; }
+  .opt-btn{ font-family:inherit; background:transparent; border:none; padding:0; margin:0; cursor:pointer; display:inline-flex; align-items:flex-start; justify-content:center; }
+  .opt-btn:hover:not(:disabled) .cap{ transform:translateY(-4px); }
+  .opt-btn:active:not(:disabled) .cap{ transform:translateY(5px); box-shadow:0 3px 0 #727c88, 0 5px 8px rgba(20,30,50,.2); }
+  .opt-btn:disabled{ cursor:default; }
+  .opt-btn:focus-visible, .tf-btn:focus-visible, .btn:focus-visible{ outline:3px solid var(--pen); outline-offset:4px; }
+
+  .opt-btn.correct .cap{ background:linear-gradient(#7fd6a1,#3fae6b); box-shadow:0 9px 0 #26784a, 0 14px 16px rgba(20,60,40,.25); }
+  .opt-btn.correct .cap::before{ background:linear-gradient(#f4fff8,#d4f4e0); }
+  .opt-btn.correct .lg{ color:#146c2e; }
+  .opt-btn.wrong .cap{ background:linear-gradient(#f29a96,#d9443a); box-shadow:0 9px 0 #98261f, 0 14px 16px rgba(80,20,20,.25); animation:shake .32s ease; }
+  .opt-btn.wrong .cap::before{ background:linear-gradient(#fff6f5,#fcd9d6); }
+  .opt-btn.wrong .lg{ color:#a01d1d; }
+
+  .opt-btn.text-mode{
+    width:100%; display:block; text-align:left; font-size:22px; color:var(--ink); padding:12px 20px;
+    background:#fff; border:2px solid #c3d0ee; border-left:8px solid var(--pen); border-radius:6px;
+    transition:background .15s ease, transform .15s ease;
+  }
+  .opt-btn.text-mode:hover:not(:disabled){ background:#eef3ff; transform:translateX(3px); }
+  .opt-btn.text-mode.correct{ background:#e6f9ec; border-color:var(--green); color:#146c2e; font-weight:800; }
+  .opt-btn.text-mode.wrong{ background:#ffecec; border-color:var(--red); color:#a01d1d; animation:shake .32s ease; }
+
+  @keyframes shake{ 0%,100%{ transform:translateX(0); } 25%{ transform:translateX(-6px); } 75%{ transform:translateX(6px); } }
+
+  /* ===== ВЕРНО / НЕВЕРНО ===== */
+  .tf-btn{
+    display:inline-flex; align-items:center; gap:10px; font-family:var(--hand); font-size:30px;
+    padding:14px 40px; border-radius:8px; border:3px solid; cursor:pointer; background:#fff;
+    transition:transform .12s ease, background .15s ease;
+  }
+  .tf-btn svg{ width:34px; height:34px; fill:none; stroke:currentColor; stroke-width:5; stroke-linecap:round; stroke-linejoin:round; }
+  .tf-true{ color:#146c2e; border-color:var(--green); }
+  .tf-true:hover:not(:disabled){ background:#e6f9ec; transform:translateY(-3px); }
+  .tf-false{ color:#a01d1d; border-color:var(--red); }
+  .tf-false:hover:not(:disabled){ background:#ffecec; transform:translateY(-3px); }
+  .tf-btn.correct{ background:#c9f2d6; }
+  .tf-btn.wrong{ background:#ffd9d9; animation:shake .32s ease; }
+
+  /* ===== СОЕДИНИ КЛАВИШУ И ДЕЙСТВИЕ ===== */
+  .drag-instruction{ font-size:18px; color:var(--muted); margin-bottom:14px; text-align:center; }
+  .chips-pool{
+    display:flex; flex-wrap:wrap; gap:10px; min-height:72px; padding:12px; border:2px dashed #9fb2d6;
+    border-radius:8px; background:#f6f9ff; margin-bottom:18px; align-items:center; justify-content:center;
+  }
+  .chips-pool.over{ background:#e4eeff; border-color:var(--pen); }
+  .chips-pool:empty{ min-height:0; padding:0; border:none; margin-bottom:16px; }
+  .chip-text{
+    padding:9px 16px; border-radius:3px; background:#fff3a8; border:2px solid #d8bd3c; font-size:18px; font-weight:800;
+    color:#4a3f08; cursor:grab; box-shadow:2px 3px 0 rgba(120,95,0,.25); transition:transform .1s ease;
+  }
+  .chip-text:hover{ transform:translateY(-2px) rotate(-1deg); }
+  .chip-text.dragging{ opacity:.35; }
+  .chip-text.selected{ border-color:var(--pen); box-shadow:0 0 0 4px rgba(31,58,158,.25); }
+  .chip-text.correct{ border-color:var(--green); background:#d6f5e1; color:#146c2e; }
+  .chip-text.wrong{ border-color:var(--red); background:#ffdcd9; color:#a01d1d; }
+
+  .dropzones.match-mode{ display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
+  .dropzone.match{
+    display:flex; align-items:center; gap:14px; min-height:130px; padding:10px 14px;
+    background:#f6f9ff; border:2px dashed #9fb2d6; border-radius:8px;
+  }
+  .dropzone.match.over{ background:#e4eeff; border-color:var(--pen); }
+  .dz-key{ flex:0 0 auto; display:flex; }
+  .dz-drop{
+    flex:1 1 auto; min-height:64px; min-width:0; border:2px dashed #b7c6e2; border-radius:6px; background:#fff;
+    display:flex; align-items:center; justify-content:center; padding:6px;
+  }
+  .dz-drop.filled{ border-style:solid; }
+  .dz-drop .chip-text{ font-size:15px; padding:7px 12px; text-align:center; }
+  .check-btn{ display:block; margin:20px auto 0; font-size:24px; padding:10px 30px; }
+  .check-btn.ok{ background:var(--green); border-color:#1f7a44; box-shadow:0 5px 0 #1a6038; }
+
+  /* ===== РЕЗУЛЬТАТ ===== */
+  .result-card{ max-width:780px; margin:4vh auto 0; text-align:center; }
+  .res-emoji{ font-size:64px; line-height:1; }
+  .result-card h2{ font-family:var(--hand); font-weight:400; font-size:30px; color:var(--pen); margin:10px 0 14px; }
+  .score-big{ font-family:var(--hand); font-size:30px; color:var(--muted); margin:6px 0 14px; }
+  .score-big #resScore{
+    display:inline-block; min-width:116px; height:116px; line-height:106px; padding:0 14px; border:6px solid var(--red);
+    border-radius:50%; color:var(--red); font-size:72px; transform:rotate(-6deg); margin-right:10px;
+  }
+  .score-big small{ font-size:28px; color:var(--muted); }
+  .level{ font-family:var(--hand); font-size:30px; color:#146c2e; margin-bottom:10px; }
+  .desc{ font-size:20px; color:#3d4d66; margin:0 auto 24px; max-width:620px; }
+  .breakdown{ display:flex; gap:14px; flex-wrap:wrap; justify-content:center; margin-bottom:26px; }
+  .brk{ background:#fff3a8; border:2px solid #d8bd3c; border-radius:3px; padding:10px 22px; font-size:18px; font-weight:800; color:#4a3f08; box-shadow:2px 3px 0 rgba(120,95,0,.25); }
+  .brk b{ color:var(--pen); }
+
+
+  .err-box{ text-align:left; margin:0 0 26px; }
+  .err-box h3{ font-family:var(--hand); font-weight:400; font-size:28px; color:var(--red); border-bottom:3px double var(--red); display:inline-block; margin:0 0 14px; }
+  .err-none{ text-align:center; font-family:var(--hand); font-size:28px; color:#146c2e; }
+  .err-item{ background:#fffdf0; border:2px solid #e6d98f; border-left:8px solid var(--red); border-radius:6px; padding:12px 18px 6px; margin-bottom:14px; }
+  .err-q{ font-weight:800; font-size:19px; margin-bottom:6px; }
+  .err-q .keycap{ vertical-align:middle; margin:0 6px 4px; }
+  .err-row{ display:flex; flex-wrap:wrap; align-items:center; gap:6px 12px; margin-bottom:4px; }
+  .err-lab{ font-family:var(--hand); font-size:22px; min-width:120px; }
+  .err-lab.bad{ color:var(--red); }
+  .err-lab.good{ color:var(--green); }
+  .err-txt{ font-size:19px; font-weight:800; }
+  .err-arrow{ font-family:var(--hand); font-size:30px; color:var(--pen); }
+
+  @media (max-width:760px){
+    body{ font-size:17px; padding:12px; }
+    .qtext{ font-size:24px; }
+    .dropzones.match-mode{ grid-template-columns:1fr; }
+    .card{ padding:18px; }
+    h1{ font-size:32px; }
+    .cap{ --w:112px; --h:100px; }
+    .cap.w{ --w:150px; } .cap.sp{ --w:240px; }
+    .lg svg{ width:44px; height:44px; } .lg .ch{ font-size:46px; } .lg .nm{ font-size:15px; }
+  }
+  @media (prefers-reduced-motion:reduce){ *{ animation:none !important; transition:none !important; } }
+
+  html{ -webkit-text-size-adjust:100%; }
+  button, .chip-text{ touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+  @media (max-width:760px){
+    body{ padding:10px; font-size:18px; }
+    body::before{ left:3px; }
+    .card{ padding:16px 14px; box-shadow:4px 4px 0 rgba(31,58,158,.16); }
+    .start-card{ margin-top:2vh; }
+    h1{ font-size:34px; }
+    #nameInput{ font-size:28px; padding:12px; }
+    .btn{ width:100%; font-size:28px; padding:14px; }
+    .badge{ font-size:17px; padding:3px 10px; }
+    .qtext{ font-size:25px; }
+    .options-wrap{ gap:10px 8px; }
+    .cap{ --w:104px; --h:94px; }
+    .cap.w{ --w:140px; }
+    .cap.sp{ --w:236px; }
+    .lg svg{ width:40px; height:40px; }
+    .lg .nm{ font-size:15px; }
+    .tf-btn{ width:100%; justify-content:center; font-size:30px; padding:16px; }
+    .options-wrap .tf-btn + .tf-btn{ margin-top:2px; }
+    .score-big #resScore{ min-width:100px; height:100px; line-height:90px; font-size:62px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- ============ ЭКРАН 1: СТАРТ ============ -->
+  <section id="startScreen" class="screen active">
+    <div class="card start-card">
+            <h1>Знакомство<br>с клавиатурой</h1>
+      <p class="subtitle">Домашний тренажёр &middot; 2 класс &middot; 10 заданий</p>
+
+      <label class="name-label" for="nameInput">Введи своё имя:</label>
+      <input id="nameInput" type="text" placeholder="" enterkeyhint="done" autocomplete="off"
+             spellcheck="false" maxlength="30">
+      <button id="startBtn" class="btn btn-primary" disabled>Начать тест ▶</button>
+    </div>
+  </section>
+
+  <!-- ============ ЭКРАН 2: ТЕСТ ============ -->
+  <section id="quizScreen" class="screen">
+    <div class="topbar">
+      <span class="badge">🧑‍🎓 <span id="studentName"></span></span>
+      <span class="badge" id="stageBadge">Этап 1</span>
+      <span class="badge" id="progressBadge">Вопрос 1 из 10</span>
+    </div>
+
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <div class="card">
+      <div class="qnum" id="qNum">Задание 1</div>
+      <div class="qtext" id="qText"></div>
+      <div id="qArea"></div>
+    </div>
+  </section>
+
+  <!-- ============ ЭКРАН 3: РЕЗУЛЬТАТ ============ -->
+  <section id="resultScreen" class="screen">
+    <div class="card result-card">
+      <div class="res-emoji" id="resEmoji">🏆</div>
+      <h2>Ученик: <span id="resName"></span></h2>
+      <div class="score-big"><span id="resScore">0</span> <small>/ 10</small></div>
+      <div class="level" id="resLevel"></div>
+      <p class="desc" id="resDesc"></p>
+
+      <div class="breakdown">
+        <div class="brk">Верных ответов: <b id="resS1">0 из 10</b></div>
+      </div>
+
+      <div id="errBox" class="err-box"></div>
+
+      <button id="restartBtn" class="btn btn-primary">Пройти тест заново 🔄</button>
+    </div>
+  </section>
+
+</div>
+
+<script>
+/* =========================================================
+   1. БИБЛИОТЕКА КЛАВИШ (крупные иконки)
+   ========================================================= */
+const IC = {
+  backspace:'<svg viewBox="0 0 48 48"><path d="M17 11H41a3 3 0 0 1 3 3V34a3 3 0 0 1-3 3H17L4 24Z"/><path d="M22 18L32 30M32 18L22 30"/></svg>',
+  del:'<svg viewBox="0 0 48 48"><path d="M31 11H7a3 3 0 0 0-3 3V34a3 3 0 0 0 3 3H31L44 24Z"/><path d="M16 18L26 30M26 18L16 30"/></svg>',
+  enter:'<svg viewBox="0 0 48 48"><path d="M38 10V26H11"/><path d="M19 18L11 26L19 34"/></svg>',
+  shift:'<svg viewBox="0 0 48 48"><path d="M24 6L41 24H31V41H17V24H7Z"/></svg>',
+  caps:'<svg viewBox="0 0 48 48"><path d="M24 4L41 21H31V32H17V21H7Z"/><path d="M17 38H31V44H17Z"/></svg>',
+  tab:'<svg viewBox="0 0 48 48"><path d="M6 24H34M26 16L34 24L26 32M41 12V36"/></svg>',
+  space:'<svg viewBox="0 0 48 48"><path d="M7 19V31H41V19"/></svg>'
+};
+const ICO = {
+  ok:'<svg viewBox="0 0 24 24"><path d="M4 13L10 19L20 6"/></svg>',
+  no:'<svg viewBox="0 0 24 24"><path d="M5 5L19 19M19 5L5 19"/></svg>'
+};
+const KEYS = {
+  backspace: { name:'Backspace', ru:'Бэкспейс', cls:'w' },
+  enter:     { name:'Enter',     ru:'Энтер',    cls:'w' },
+  shift:     { name:'Shift',     ru:'Шифт',     cls:'w' },
+  space:     { name:'Space',     ru:'Пробел',   cls:'sp' },
+  del:       { name:'Delete',    ru:'Делит' },
+  caps:      { name:'Caps Lock', ru:'Капс Лок', cls:'w' },
+  tab:       { name:'Tab',       ru:'Таб',      cls:'w' },
+  alt:       { name:'Alt',       ru:'Альт' }
+};
+
+/* mode: undefined — иконка + название, 'icon' — только иконка, 'name' — только название */
+function keycapHTML(k, small, mode) {
+  const d = KEYS[k];
+  const sm = small ? ' sm' : '';
+  if (!d) {
+    return `<span class="keycap${sm}"><span class="cap"><span class="lg"><span class="ch">${k}</span></span></span></span>`;
+  }
+  const flat = mode === 'name';   // в режиме «только название» все клавиши одной ширины
+  const icon = (mode !== 'name' && IC[k]) ? IC[k] : '';
+  const name = (mode !== 'icon') ? `<span class="nm">${d.name}</span>` : '';
+  const ru   = (mode !== 'icon') ? `<span class="ru">${d.ru}</span>` : '';
+  return `<span class="keycap${sm}"><span class="cap${(!flat && d.cls) ? ' ' + d.cls : ''}"><span class="lg">${icon}${name}</span></span>${ru}</span>`;
+}
+
+/* =========================================================
+   2. БАНК ВОПРОСОВ (30 заданий: 22 базовых + 8 продвинутых)
+   ========================================================= */
+const QUESTIONS = [
+  /* [Промежуточное оценивание, зад. 1, вопрос 1] */
+  { stage:1, type:'mc', q:'Какая клавиша поможет тебе стереть ошибку (удалить букву)?',
+    options:[ {id:'enter',keys:['enter']}, {id:'backspace',keys:['backspace']}, {id:'shift',keys:['shift']} ],
+    answer:'backspace' },
+  { stage:1, type:'mc', q:'Какая клавиша ставит пробел между словами?',
+    options:[ {id:'enter',keys:['enter']}, {id:'space',keys:['space']}, {id:'shift',keys:['shift']} ],
+    answer:'space' },
+  { stage:1, type:'tf', q:'Клавиатура — это устройство для ввода текста в компьютер.', answer:'Верно' },
+  /* [Промежуточное оценивание, зад. 1, вопрос 3] */
+  { stage:1, type:'mc', q:'Какая клавиша помогает напечатать заглавную (большую) букву?',
+    options:[ {id:'enter',keys:['enter']}, {id:'shift',keys:['shift']}, {id:'backspace',keys:['backspace']} ],
+    answer:'shift' },
+  { stage:1, type:'mc', q:'Какую клавишу нужно нажать, чтобы начать новую строку?',
+    options:[ {id:'space',keys:['space']}, {id:'enter',keys:['enter']}, {id:'shift',keys:['shift']} ],
+    answer:'enter' },
+  { stage:1, type:'mc', q:'Клавиша с иконкой {{k:backspace}} — это ...', nameOnly:true,
+    options:[ {id:'enter',keys:['enter']}, {id:'backspace',keys:['backspace']}, {id:'space',keys:['space']} ],
+    answer:'backspace' },
+  { stage:1, type:'tf', q:'Клавиша Space ставит пустое место между словами.', answer:'Верно' },
+  { stage:1, type:'mc', q:'Где на клавиатуре находятся цифры?',
+    options:[ {id:'a',text:'В верхнем ряду над буквами'}, {id:'b',text:'Под клавишей Space'}, {id:'c',text:'Внутри экрана'} ],
+    answer:'a' },
+  { stage:1, type:'tf', q:'Клавиша Enter нужна для удаления букв.', answer:'Неверно' },
+  { stage:1, type:'mc', q:'Как называется самая длинная клавиша в нижнем ряду?',
+    options:[ {id:'shift',keys:['shift']}, {id:'space',keys:['space']}, {id:'enter',keys:['enter']} ],
+    answer:'space' }
+];
+
+/* =========================================================
+   3. СОСТОЯНИЕ
+   ========================================================= */
+const TOTAL1 = QUESTIONS.filter(q => q.stage === 1).length; // 22
+const TOTAL2 = QUESTIONS.filter(q => q.stage === 2).length; // 8
+
+const state = {
+  name: '',
+  index: 0,
+  c1: 0,
+  c2: 0,
+  errors: [],
+  locked: false
+};
+
+/* =========================================================
+   4. ССЫЛКИ НА DOM
+   ========================================================= */
+const startScreen  = document.getElementById('startScreen');
+const quizScreen   = document.getElementById('quizScreen');
+const resultScreen = document.getElementById('resultScreen');
+
+const nameInput  = document.getElementById('nameInput');
+const startBtn   = document.getElementById('startBtn');
+const restartBtn = document.getElementById('restartBtn');
+
+const studentNameEl = document.getElementById('studentName');
+const stageBadgeEl  = document.getElementById('stageBadge');
+const progressEl    = document.getElementById('progressBadge');
+const progressFill  = document.getElementById('progressFill');
+const qNumEl        = document.getElementById('qNum');
+const qTextEl       = document.getElementById('qText');
+const qAreaEl       = document.getElementById('qArea');
+
+/* =========================================================
+   5. УТИЛИТЫ
+   ========================================================= */
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* =========================================================
+   6. СТАРТ
+   ========================================================= */
+nameInput.addEventListener('input', () => {
+  startBtn.disabled = nameInput.value.trim().length < 2;
+});
+
+startBtn.addEventListener('click', () => {
+  const nm = nameInput.value.trim();
+  if (nm.length < 2) return;
+
+  state.name  = nm;
+  state.index = 0;
+  state.c1    = 0;
+  state.c2    = 0;
+  state.errors = [];
+  state.locked = false;
+
+  studentNameEl.textContent = nm;
+
+  startScreen.classList.remove('active');
+  resultScreen.classList.remove('active');
+  quizScreen.classList.add('active');
+
+  renderQuestion();
+});
+
+restartBtn.addEventListener('click', () => {
+  resultScreen.classList.remove('active');
+  quizScreen.classList.remove('active');
+  startScreen.classList.add('active');
+  startBtn.disabled = nameInput.value.trim().length < 2;
+  nameInput.focus();
+});
+
+/* =========================================================
+   7. РЕНДЕР ВОПРОСА
+   ========================================================= */
+function renderQuestion() {
+  const q = QUESTIONS[state.index];
+  const total = QUESTIONS.length;
+
+  state.locked = false;
+
+  stageBadgeEl.textContent = 'Клавиатура';
+  progressEl.textContent = 'Вопрос ' + (state.index + 1) + ' из ' + total;
+  progressFill.style.width = (state.index / total * 100) + '%';
+
+  qNumEl.textContent = 'Задание ' + (state.index + 1);
+  qTextEl.innerHTML = q.q.replace(/\{\{k:(\w+)\}\}/g, (m, k) => keycapHTML(k, true, 'icon'));
+
+  qAreaEl.innerHTML = '';
+
+  if (q.type === 'mc')         renderMC(q);
+  else if (q.type === 'tf')    renderTF(q);
+  else if (q.type === 'match') renderMatch(q);
+}
+
+/* ---------- выбор одного ответа ---------- */
+function renderMC(q) {
+  const useKeys = q.options[0].keys !== undefined;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'options-wrap' + (useKeys ? '' : ' text-mode');
+
+  shuffle(q.options).forEach(opt => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.dataset.id = opt.id;
+
+    if (useKeys) {
+      btn.className = 'opt-btn';
+      btn.innerHTML = opt.keys.map(k => keycapHTML(k, opt.keys.length > 1, q.nameOnly ? 'name' : undefined)).join(opt.combo ? '<span class="plus">+</span>' : '');
+    } else {
+      btn.className = 'opt-btn text-mode';
+      btn.textContent = opt.text;
+    }
+
+    btn.addEventListener('click', () => handleChoice(q, btn, opt.id));
+    wrap.appendChild(btn);
+  });
+
+  qAreaEl.appendChild(wrap);
+}
+
+/* ---------- верно / неверно ---------- */
+function renderTF(q) {
+  const wrap = document.createElement('div');
+  wrap.className = 'options-wrap';
+
+  [
+    { id: 'Верно',   cls: 'tf-true',  label: ICO.ok + 'Верно' },
+    { id: 'Неверно', cls: 'tf-false', label: ICO.no + 'Неверно' }
+  ].forEach(o => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'tf-btn ' + o.cls;
+    b.innerHTML = o.label;
+    b.dataset.id = o.id;
+    b.addEventListener('click', () => handleChoice(q, b, o.id));
+    wrap.appendChild(b);
+  });
+
+  qAreaEl.appendChild(wrap);
+}
+
+/* ---------- обработка ответа ---------- */
+function handleChoice(q, btn, value) {
+  if (state.locked) return;
+  state.locked = true;
+
+  const isCorrect = (value === q.answer);
+
+  const all = qAreaEl.querySelectorAll('.opt-btn, .tf-btn');
+  all.forEach(b => {
+    b.disabled = true;
+    if (b.dataset.id === q.answer) b.classList.add('correct');
+  });
+
+  if (!isCorrect) { btn.classList.add('wrong'); state.errors.push({ i: state.index, chosen: value }); }
+
+  recordAnswer(isCorrect);
+  setTimeout(nextQuestion, isCorrect ? 950 : 1700);
+}
+
+/* =========================================================
+   8. СОЕДИНИ КЛАВИШУ И ДЕЙСТВИЕ (задание 23)
+   ========================================================= */
+let draggedEl = null;
+let clickSelected = null;
+
+function renderMatch(q) {
+  const instr = document.createElement('div');
+  instr.className = 'drag-instruction';
+  instr.textContent = 'Перетащи табличку с действием к нужной клавише. Или нажми на табличку, а потом на клавишу.';
+  qAreaEl.appendChild(instr);
+
+  /* --- поле с табличками --- */
+  const pool = document.createElement('div');
+  pool.className = 'chips-pool';
+  pool.id = 'chipsPool';
+  qAreaEl.appendChild(pool);
+
+  /* --- зоны с клавишами --- */
+  const zonesWrap = document.createElement('div');
+  zonesWrap.className = 'dropzones match-mode';
+
+  shuffle(q.pairs).forEach(p => {
+    const z = document.createElement('div');
+    z.className = 'dropzone match';
+    z.dataset.key = p.key;
+    z.innerHTML =
+      '<div class="dz-key">' + keycapHTML(p.key, true) + '</div>' +
+      '<div class="dz-drop"></div>';
+    zonesWrap.appendChild(z);
+  });
+
+  qAreaEl.appendChild(zonesWrap);
+
+  /* --- кнопка проверки --- */
+  const checkBtn = document.createElement('button');
+  checkBtn.type = 'button';
+  checkBtn.className = 'btn btn-primary check-btn';
+  checkBtn.id = 'checkMatchBtn';
+  checkBtn.disabled = true;
+  checkBtn.textContent = 'Проверить';
+  checkBtn.addEventListener('click', checkMatch);
+  qAreaEl.appendChild(checkBtn);
+
+  /* --- создаём таблички-действия --- */
+  shuffle(q.pairs).forEach(p => {
+    const chip = document.createElement('div');
+    chip.className = 'chip-text';
+    chip.draggable = true;
+    chip.dataset.key = p.key;
+    chip.textContent = p.action;
+
+    chip.addEventListener('dragstart', e => {
+      if (state.locked) { e.preventDefault(); return; }
+      draggedEl = chip;
+      chip.classList.add('dragging');
+      e.dataTransfer.setData('text/plain', 'chip');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+
+    chip.addEventListener('dragend', () => {
+      chip.classList.remove('dragging');
+      draggedEl = null;
+    });
+
+    chip.addEventListener('click', e => {
+      if (state.locked) return;
+      e.stopPropagation();
+      if (clickSelected === chip) {
+        chip.classList.remove('selected');
+        clickSelected = null;
+      } else {
+        if (clickSelected) clickSelected.classList.remove('selected');
+        clickSelected = chip;
+        chip.classList.add('selected');
+      }
+    });
+
+    pool.appendChild(chip);
+  });
+
+  /* --- зоны приёма: поле и все клавиши --- */
+  const zones = [pool, ...zonesWrap.querySelectorAll('.dropzone.match')];
+
+  zones.forEach(zone => {
+    zone.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (!state.locked) zone.classList.add('over');
+    });
+
+    zone.addEventListener('dragleave', () => zone.classList.remove('over'));
+
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('over');
+      if (state.locked || !draggedEl) return;
+      placeChip(zone, draggedEl);
+      draggedEl = null;
+    });
+
+    zone.addEventListener('click', () => {
+      if (state.locked || !clickSelected) return;
+      const el = clickSelected;
+      clickSelected = null;
+      el.classList.remove('selected');
+      placeChip(zone, el);
+    });
+  });
+
+  function placeChip(zone, chip) {
+    if (zone.classList.contains('chips-pool')) {
+      pool.appendChild(chip);
+    } else {
+      const slot = zone.querySelector('.dz-drop');
+      const old = slot.querySelector('.chip-text');
+      if (old && old !== chip) pool.appendChild(old);   // вернуть старую в поле
+      slot.appendChild(chip);
+    }
+    updateSlots();
+    updateCheckBtn();
+  }
+
+  function updateSlots() {
+    zonesWrap.querySelectorAll('.dz-drop').forEach(slot => {
+      slot.classList.toggle('filled', slot.querySelectorAll('.chip-text').length > 0);
+    });
+  }
+
+  function updateCheckBtn() {
+    const left = pool.querySelectorAll('.chip-text').length;
+    checkBtn.disabled = (left > 0);
+    checkBtn.textContent = left > 0
+      ? 'Проверить (осталось ' + left + ')'
+      : 'Проверить';
+  }
+
+  updateSlots();
+  updateCheckBtn();
+}
+
+function checkMatch() {
+  if (state.locked) return;
+  state.locked = true;
+
+  let allCorrect = true;
+  const wrongKeys = [];
+
+  qAreaEl.querySelectorAll('.dropzone.match').forEach(z => {
+    const key = z.dataset.key;
+    const slot = z.querySelector('.dz-drop');
+    const chips = slot.querySelectorAll('.chip-text');
+
+    if (chips.length !== 1) { allCorrect = false; wrongKeys.push(key); return; }
+
+    const chip = chips[0];
+    chip.draggable = false;
+
+    if (chip.dataset.key === key) {
+      chip.classList.add('correct');
+    } else {
+      chip.classList.add('wrong');
+      allCorrect = false;
+      wrongKeys.push(key);
+    }
+  });
+
+  const pool = document.getElementById('chipsPool');
+  if (pool && pool.querySelectorAll('.chip-text').length > 0) allCorrect = false;
+
+  const btn = document.getElementById('checkMatchBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = allCorrect ? '✅ Всё верно!' : '❌ Есть ошибки';
+    if (allCorrect) btn.classList.add('ok');
+  }
+
+  if (!allCorrect) state.errors.push({ i: state.index, wrongKeys });
+  recordAnswer(allCorrect);
+  setTimeout(nextQuestion, allCorrect ? 1300 : 2400);
+}
+
+/* =========================================================
+   9. ПЕРЕХОД ДАЛЬШЕ
+   ========================================================= */
+function recordAnswer(isCorrect) {
+  if (!isCorrect) return;
+  if (QUESTIONS[state.index].stage === 1) {
+    state.c1++;
+  } else {
+    state.c2++;
+  }
+}
+
+function nextQuestion() {
+  state.index++;
+  if (state.index >= QUESTIONS.length) {
+    showResults();
+  } else {
+    renderQuestion();
+  }
+}
+
+/* =========================================================
+   10. РЕЗУЛЬТАТЫ
+   ========================================================= */
+function optHTML(opt) {
+  if (opt.keys) return opt.keys.map(k => keycapHTML(k, true)).join(opt.combo ? '<span class="plus">+</span>' : '');
+  return '<span class="err-txt">' + opt.text + '</span>';
+}
+
+function renderErrors() {
+  const box = document.getElementById('errBox');
+  if (!state.errors.length) {
+    box.innerHTML = '<div class="err-none">Ошибок нет — всё верно! 🎉</div>';
+    return;
+  }
+  let html = '<h3>Работа над ошибками (' + state.errors.length + ')</h3>';
+  state.errors.forEach(e => {
+    const q = QUESTIONS[e.i];
+    const qt = q.q.replace(/\{\{k:(\w+)\}\}/g, (m, k) => keycapHTML(k, true, 'icon'));
+    html += '<div class="err-item"><div class="err-q">Задание ' + (e.i + 1) + '. ' + qt + '</div>';
+    if (q.type === 'mc') {
+      const nm = q.nameOnly ? 'name' : undefined;
+      const fmt = o => o.keys ? o.keys.map(k => keycapHTML(k, true, nm)).join(o.combo ? '<span class="plus">+</span>' : '') : optHTML(o);
+      const mine = q.options.find(o => o.id === e.chosen);
+      const right = q.options.find(o => o.id === q.answer);
+      html += '<div class="err-row"><span class="err-lab bad">Твой ответ:</span>' + fmt(mine) + '</div>';
+      html += '<div class="err-row"><span class="err-lab good">Верно:</span>' + fmt(right) + '</div>';
+    } else if (q.type === 'tf') {
+      html += '<div class="err-row"><span class="err-lab bad">Твой ответ:</span><span class="err-txt">' + e.chosen + '</span></div>';
+      html += '<div class="err-row"><span class="err-lab good">Верно:</span><span class="err-txt">' + q.answer + '</span></div>';
+    } else {
+      const bad = (e.wrongKeys && e.wrongKeys.length) ? e.wrongKeys : q.pairs.map(p => p.key);
+      q.pairs.filter(p => bad.includes(p.key)).forEach(p => {
+        html += '<div class="err-row">' + keycapHTML(p.key, true) + '<span class="err-arrow">→</span><span class="err-txt">' + p.action + '</span></div>';
+      });
+    }
+    html += '</div>';
+  });
+  box.innerHTML = html;
+}
+
+function showResults() {
+  quizScreen.classList.remove('active');
+  resultScreen.classList.add('active');
+  window.scrollTo(0, 0);
+
+  const score = state.c1;   // 1 верный ответ = 1 балл, всего 10
+  let emoji, level, desc;
+  if (score <= 4) {
+    emoji = '🙂'; level = 'Нужно потренироваться';
+    desc = 'Не расстраивайся! Посмотри ошибки ниже и пройди тренажёр ещё раз.';
+  } else if (score <= 7) {
+    emoji = '😃'; level = 'Хорошо!';
+    desc = 'Ты уже знаешь многие клавиши. Повтори те, где были ошибки.';
+  } else if (score <= 9) {
+    emoji = '🌟'; level = 'Отлично!';
+    desc = 'Здорово! Совсем чуть-чуть до идеального результата.';
+  } else {
+    emoji = '🏆'; level = 'Мастер клавиатуры!';
+    desc = 'Супер! Ты без ошибок знаешь все клавиши из тренажёра.';
+  }
+
+  renderErrors();
+  document.getElementById('resName').textContent  = state.name;
+  document.getElementById('resEmoji').textContent = emoji;
+  document.getElementById('resScore').textContent = score;
+  document.getElementById('resLevel').textContent = level;
+  document.getElementById('resDesc').textContent  = desc;
+  document.getElementById('resS1').textContent = state.c1 + ' из ' + TOTAL1;
+}
+
+/* =========================================================
+   11. ANTI-CHEAT (защита от копирования и просмотра кода)
+   ========================================================= */
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('copy', e => e.preventDefault());
+document.addEventListener('cut',  e => e.preventDefault());
+
+document.addEventListener('keydown', e => {
+  const key = e.key;
+  const lower = (typeof key === 'string' && key.length === 1) ? key.toLowerCase() : key;
+
+  const isBlockedCombo =
+    (e.ctrlKey || e.metaKey) && ['c', 'a', 'u', 's', 'p', 'x'].includes(lower);
+
+  const isBlockedKey =
+    key === 'F12' ||
+    key === 'PrintScreen' ||
+    e.keyCode === 123 ||
+    e.keyCode === 44;
+
+  if (isBlockedCombo || isBlockedKey) {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  }
+}, true);
+
+/* Защита от перетаскивания выделенного текста наружу */
+document.addEventListener('dragstart', e => {
+  if (e.target && e.target.classList && e.target.classList.contains('chip-text')) return;
+  e.preventDefault();
+});
+
+/* Первичная проверка поля имени при загрузке */
+startBtn.disabled = nameInput.value.trim().length < 2;
+nameInput.focus();
+</script>
+</body>
+</html>
