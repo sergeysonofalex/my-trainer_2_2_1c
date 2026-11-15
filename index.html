@@ -112,6 +112,10 @@
 
   .plus{ align-self:center; font-family:var(--hand); font-size:44px; color:var(--pen); margin:0 4px 26px; }
 
+  /* ===== КАРТИНКА КЛАВИАТУРЫ ===== */
+  .kb-pic{ margin:0 auto 22px; max-width:680px; padding:12px 12px 14px; background:#eef1f5; border:2px solid #c3d0ee; border-radius:10px; }
+  .kb-pic svg{ display:block; width:100%; height:auto; }
+
   /* ===== ВАРИАНТЫ ===== */
   .options-wrap{ display:flex; flex-wrap:wrap; gap:14px 22px; justify-content:center; margin-top:6px; }
   .options-wrap.text-mode{ flex-direction:column; gap:10px; justify-content:stretch; }
@@ -352,6 +356,47 @@ function keycapHTML(k, small, mode) {
   return `<span class="keycap${sm}"><span class="cap${(!flat && d.cls) ? ' ' + d.cls : ''}"><span class="lg">${icon}${name}</span></span>${ru}</span>`;
 }
 
+/* ---------- картинка клавиатуры (SVG) ---------- */
+function keyboardPic() {
+  const U = 40, UH = 46, G = 4, R = 6;
+  const L = s => s.split('');
+  const rows = [
+    [['Ё',1], ...L('1234567890').map(c => [c,1]), ['-',1], ['=',1], ['Backspace',2]],
+    [['Tab',1.5], ...L('ЙЦУКЕНГШЩЗХЪ').map(c => [c,1]), ['\\',1.5]],
+    [['Caps Lock',1.75], ...L('ФЫВАПРОЛДЖЭ').map(c => [c,1]), ['Enter',2.25]],
+    [['Shift',2.25], ...L('ЯЧСМИТЬБЮ').map(c => [c,1]), ['.',1], ['Shift',1.75]],
+    [['Ctrl',1.25], ['Win',1.25], ['Alt',1.25], ['Space',6.25], ['Alt',1.25], ['Win',1.25], ['Menu',1.25], ['Ctrl',1.25]]
+  ];
+  /* те же иконки, что и в заданиях */
+  const ICONS = { 'Backspace':'backspace', 'Enter':'enter', 'Space':'space', 'Shift':'shift' };
+  const inner = k => IC[k].replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '');
+  const W = 15 * U, H = rows.length * UH;
+  const FONT = 'Nunito,Trebuchet MS,Verdana,sans-serif';
+  let s = '<svg viewBox="-4 -4 ' + (W + 8) + ' ' + (H + 8) + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Клавиатура">';
+  s += '<rect x="-4" y="-4" width="' + (W + 8) + '" height="' + (H + 8) + '" rx="10" fill="#d5dbe3"/>';
+  rows.forEach((row, r) => {
+    let x = 0;
+    row.forEach(([label, w]) => {
+      const kw = w * U - G, kh = UH - G, y = r * UH, cx = x + w * U / 2;
+      s += '<rect x="' + (x + G/2) + '" y="' + (y + G/2) + '" width="' + kw + '" height="' + kh + '" rx="' + R + '" fill="#fff" stroke="#727c88" stroke-width="1.5"/>';
+      if (ICONS[label]) {
+        const sz = 20;
+        s += '<svg x="' + (cx - sz/2) + '" y="' + (y + 6) + '" width="' + sz + '" height="' + sz + '" viewBox="0 0 48 48" fill="none" stroke="#26324a" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round">' + inner(ICONS[label]) + '</svg>';
+        s += '<text x="' + cx + '" y="' + (y + UH - 9) + '" text-anchor="middle" font-family="' + FONT + '" font-weight="800" font-size="10" fill="#26324a">' + label + '</text>';
+      } else if (label) {
+        const fs = label.length > 1 ? (label.length > 5 ? 10 : 11) : 16;
+        s += '<text x="' + cx + '" y="' + (y + UH / 2 + fs * 0.36) + '" text-anchor="middle" font-family="' + FONT + '" font-weight="800" font-size="' + fs + '" fill="#26324a">' + label + '</text>';
+      }
+      x += w * U;
+    });
+  });
+  s += '</svg>';
+  const d = document.createElement('div');
+  d.className = 'kb-pic';
+  d.innerHTML = s;
+  return d;
+}
+
 /* =========================================================
    2. БАНК ВОПРОСОВ (30 заданий: 22 базовых + 8 продвинутых)
    ========================================================= */
@@ -374,11 +419,11 @@ const QUESTIONS = [
   { stage:1, type:'mc', q:'Клавиша с иконкой {{k:backspace}} — это ...', nameOnly:true,
     options:[ {id:'enter',keys:['enter']}, {id:'backspace',keys:['backspace']}, {id:'space',keys:['space']} ],
     answer:'backspace' },
-  { stage:1, type:'tf', q:'Клавиша Space ставит пустое место между словами.', answer:'Верно' },
+  { stage:1, type:'tf', q:'Клавиша Space (пробел) {{k:space}} ставит пустое место между словами.', answer:'Верно' },
   { stage:1, type:'mc', q:'Где на клавиатуре находятся цифры?',
     options:[ {id:'a',text:'В верхнем ряду над буквами'}, {id:'b',text:'Под клавишей Space'}, {id:'c',text:'Внутри экрана'} ],
     answer:'a' },
-  { stage:1, type:'tf', q:'Клавиша Enter нужна для удаления букв.', answer:'Неверно' },
+  { stage:1, type:'tf', q:'Клавиша Enter (энтер) {{k:enter}} нужна для удаления букв.', answer:'Неверно' },
   { stage:1, type:'mc', q:'Как называется самая длинная клавиша в нижнем ряду?',
     options:[ {id:'shift',keys:['shift']}, {id:'space',keys:['space']}, {id:'enter',keys:['enter']} ],
     answer:'space' }
@@ -482,6 +527,7 @@ function renderQuestion() {
   qTextEl.innerHTML = q.q.replace(/\{\{k:(\w+)\}\}/g, (m, k) => keycapHTML(k, true, 'icon'));
 
   qAreaEl.innerHTML = '';
+  qAreaEl.appendChild(keyboardPic());   // картинка клавиатуры во всех заданиях
 
   if (q.type === 'mc')         renderMC(q);
   else if (q.type === 'tf')    renderTF(q);
